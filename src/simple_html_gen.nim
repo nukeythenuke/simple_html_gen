@@ -26,15 +26,8 @@ proc add*(node: Node, value: Node) =
 proc add*(node: Node, value: string) =
   node.value.add(newVariant(value))
 
-proc render(s: string): seq[string] {.noSideEffect.}=
-    if s.contains("\n"): # Split multiline strings and add indentation
-      for line in s.splitLines:
-        result.add(line)
-    else:
-      result.add(s)
-
 proc render*(node: Node): seq[string] {.noSideEffect.}=
-  var indent = "    "
+  var indent = "    " # 4 spaces
 
   var attrs = ""
   for attr in node.attributes:
@@ -45,7 +38,7 @@ proc render*(node: Node): seq[string] {.noSideEffect.}=
 
   if node.value.len == 0: # If node has no value then close on same line
     result[0].add(closingTag)
-  elif node.value.len == 1 and node.value[0].ofType(string) and not node.value[0].get(string).contains("\n"): # If only value is a single line string render on 1 line
+  elif node.value.len == 1 and node.value[0].ofType(string) and not node.value[0].get(string).contains("\n"): # If only value is a single line string then render on 1 line
     result[0].add(node.value[0].get(string))
     result[0].add(closingTag)
   else:
@@ -55,7 +48,7 @@ proc render*(node: Node): seq[string] {.noSideEffect.}=
         for line in v.render:
           result.add(indent & line)
       of string:
-        for line in v.render:
+        for line in v.splitLines:
           result.add(indent & line)
       else:
         debugEcho("unknown variant type")
