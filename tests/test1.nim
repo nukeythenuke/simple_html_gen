@@ -18,5 +18,6 @@ test "render":
   page.body.add(main)
   page.body.add(notmain)
   page.body.add(Attribute(name: "id", value: "body"))
+  page.body.add("I am just text")
 
   echo page.render
