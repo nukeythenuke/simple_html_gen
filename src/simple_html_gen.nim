@@ -17,6 +17,15 @@ proc init*(page: Page) =
   page.head = Node(tag: "head")
   page.body = Node(tag: "body")
 
+proc `$`(attr: Attribute): string =
+  attr.name & "=" & escape(attr.value)
+
+proc `$`(attrs: seq[Attribute]): string =
+  if attrs.len == 0:
+    ""
+  else:
+    " " & attrs.join(" ")
+
 proc add*(node: Node, attr: Attribute) =
   node.attributes.add(attr)
 
@@ -29,11 +38,7 @@ proc add*(node: Node, value: string) =
 proc render*(node: Node): seq[string] {.noSideEffect.}=
   var indent = "    " # 4 spaces
 
-  var attrs = ""
-  for attr in node.attributes:
-    attrs.add(" " & attr.name & "=" & attr.value)
-
-  result.add("<" & node.tag & attrs & ">") # Opening tag
+  result.add("<" & node.tag & $node.attributes & ">") # Opening tag
   var closingTag = "</" & node.tag & ">"
 
   if node.value.len == 0: # If node has no value then close on same line
