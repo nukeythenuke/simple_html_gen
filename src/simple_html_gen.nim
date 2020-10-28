@@ -26,36 +26,46 @@ proc add*(node: Node, value: Node) =
 proc add*(node: Node, value: string) =
   node.value.add(newVariant(value))
 
-proc render*(node: Node, crumb: var seq[string]): string =
-  var indent = strutils.repeat('\t', crumb.len)
-  crumb.add(node.tag)
-
-  result.add("\n" & indent & "<" & node.tag)
-  for attr in node.attributes:
-    result.add(" " & attr.name & "=" & attr.value)
-  result.add(">")
-
-  for val in node.value:
-    variantMatch case val as v
-    of Node:
-      result.add(v.render(crumb))
-    of string:
-      result.add(v)
+proc render(s: string): seq[string] {.noSideEffect.}=
+    if s.contains("\n"): # Split multiline strings and add indentation
+      for line in s.splitLines:
+        result.add(line)
     else:
-      echo "unknown variant type in " & crumb.join("->")
+      result.add(s)
 
-  if(result.endsWith('>') and not result.endsWith(node.tag & '>')):
-    result.add('\n' & indent)
-  result.add("</" & node.tag & ">")
+proc render*(node: Node): seq[string] {.noSideEffect.}=
+  var indent = "    "
 
-  discard crumb.pop
+  var attrs = ""
+  for attr in node.attributes:
+    attrs.add(" " & attr.name & "=" & attr.value)
 
-proc render*(page: Page): string =
+  result.add("<" & node.tag & attrs & ">") # Opening tag
+  var closingTag = "</" & node.tag & ">"
+
+  if node.value.len == 0: # If node has no value then close on same line
+    result[0].add(closingTag)
+  elif node.value.len == 1 and node.value[0].ofType(string) and not node.value[0].get(string).contains("\n"): # If only value is a single line string render on 1 line
+    result[0].add(node.value[0].get(string))
+    result[0].add(closingTag)
+  else:
+    for val in node.value:
+      variantMatch case val as v
+      of Node:
+        for line in v.render:
+          result.add(indent & line)
+      of string:
+        for line in v.render:
+          result.add(indent & line)
+      else:
+        debugEcho("unknown variant type")
+    result.add(closingTag)
+
+proc render*(page: Page): string {.noSideEffect.}=
   result.add("<!DOCTYPE html>\n")
-  result.add("<html>")
+  result.add("<html>\n")
 
-  var crumb: seq[string]
-  result.add(render(page.head, crumb))
-  result.add(render(page.body, crumb))
+  result.add(page.head.render.join("\n") & "\n")
+  result.add(page.body.render.join("\n") & "\n")
 
-  result.add("\n</html>")
+  result.add("</html>")
